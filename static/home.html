@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>todoApp</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            height: 100vh;
+            padding-top: 20px;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .form-container, .task-list-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            width: 50%;
+        }
+
+        h4 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        input[type="text"],
+        input[type="date"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        input[type="submit"] {
+            background-color: #28a745;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #218838;
+        }
+
+        .task-list {
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .task-item {
+            background-color: #fff;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .task-actions button {
+            background-color: #007bff;
+            color: #fff;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .task-actions button.delete-btn {
+            background-color: #dc3545;
+        }
+
+        .task-actions button:hover {
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="form-container">
+            <h4>Title</h4>
+            <input type="text" placeholder="Title of the task" name="title" id="title">
+            <h4>Description</h4>
+            <input type="text" placeholder="Description of the task" name="description" id="description">
+            <h4>Creation date</h4>
+            <input type="date" placeholder="Creation date" name="creation_date" id="creation_date">
+            <h4>Due date</h4>
+            <input type="date" placeholder="Due date" name="due_date" id="due_date">
+            <br><br>
+            <input type="submit" id="submitBtn" value="Add Task">
+        </div>
+
+        <div class="task-list-container">
+            <h4>Task List</h4>
+            <div class="task-list" id="taskList">
+                <!-- Task items will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('submitBtn').addEventListener('click', function(event) {
+            event.preventDefault();
+            
+            if (this.dataset.editingTaskId) {
+                updateTask(this.dataset.editingTaskId);
+            } else {
+                addTask();
+            }
+        });
+
+        function addTask() {
+            const title = document.getElementById('title').value;
+            const description = document.getElementById('description').value;
+            const creationDate = document.getElementById('creation_date').value;
+            const dueDate = document.getElementById('due_date').value;
+            
+            const apiEndpoint = 'http://127.0.0.1:8000/view/';
+            
+            const data = {
+                title: title,
+                description: description,
+                creation_date: creationDate,
+                due_date: dueDate
+            };
+            
+            fetch(apiEndpoint, {
+                method: 'POST', 
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                fetchTasks();
+                clearForm();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        function updateTask(id) {
+            const apiEndpoint = `http://127.0.0.1:8000/view/${id}/`;
+            
+            const title = document.getElementById('title').value;
+            const description = document.getElementById('description').value;
+            const creationDate = document.getElementById('creation_date').value;
+            const dueDate = document.getElementById('due_date').value;
+            
+            const data = {
+                title: title,
+                description: description,
+                creation_date: creationDate,
+                due_date: dueDate
+            };
+            
+            fetch(apiEndpoint, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Task updated:', data);
+                fetchTasks();
+                clearForm();
+            })
+            .catch(error => {
+                console.error('Error updating task:', error);
+            });
+        }
+
+        function deleteTask(id) {
+            const apiEndpoint = `http://127.0.0.1:8000/view/${id}/`;
+            
+            fetch(apiEndpoint, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Task deleted:', data);
+                fetchTasks();
+            })
+            .catch(error => {
+                console.error('Error deleting task:', error);
+            });
+        }
+
+        function fetchTasks() {
+            const apiEndpoint = 'http://127.0.0.1:8000/view/';
+            
+            fetch(apiEndpoint)
+            .then(response => response.json())
+            .then(data => {
+                const taskList = document.getElementById('taskList');
+                taskList.innerHTML = '';
+                
+                data.forEach(task => {
+                    const taskItem = document.createElement('div');
+                    taskItem.classList.add('task-item');
+                    taskItem.innerHTML = `
+                        <div>
+                            <h5>${task.title}</h5>
+                            <p>${task.description}</p>
+                            <small>Created on: ${task.creation_date} | Due on: ${task.due_date}</small>
+                        </div>
+                        <div class="task-actions">
+                            <button onclick="editTask('${task.id}')">Edit</button>
+                            <button class="delete-btn" onclick="deleteTask('${task.id}')">Delete</button>
+                        </div>
+                    `;
+                    taskList.appendChild(taskItem);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching tasks:', error);
+            });
+        }
+
+        function editTask(id) {
+            const apiEndpoint = `http://127.0.0.1:8000/view/${id}/`;
+
+            fetch(apiEndpoint)
+            .then(response => response.json())
+            .then(task => {
+                document.getElementById('title').value = task.title;
+                document.getElementById('description').value = task.description;
+                document.getElementById('creation_date').value = task.creation_date;
+                document.getElementById('due_date').value = task.due_date;
+                document.getElementById('submitBtn').value = 'Update Task';
+                document.getElementById('submitBtn').dataset.editingTaskId = task.id;
+            })
+            .catch(error => {
+                console.error('Error fetching task details:', error);
+            });
+        }
+
+        function clearForm() {
+            document.getElementById('title').value = '';
+            document.getElementById('description').value = '';
+            document.getElementById('creation_date').value = '';
+            document.getElementById('due_date').value = '';
+            document.getElementById('submitBtn').value = 'Add Task';
+            delete document.getElementById('submitBtn').dataset.editingTaskId;
+        }
+
+        window.onload = fetchTasks;
+    </script>
+</body>
+</html>
